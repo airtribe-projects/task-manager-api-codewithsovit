@@ -78,6 +78,11 @@ app.delete('/api/movies/:id', (req, res) => {
 
 
 
-app.listen(3000, () => {
-    console.log('Server is running on port 3000');
-});
+// Only start server if this file is run directly (not imported for testing)
+if (require.main === module) {
+    app.listen(3000, () => {
+        console.log('Server is running on port 3000');
+    });
+}
+
+module.exports = app;
