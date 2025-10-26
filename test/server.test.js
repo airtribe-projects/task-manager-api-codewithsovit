@@ -1,106 +1,116 @@
-const tap = require("tap");
-const supertest = require("supertest");
-const app = require("../app");
-const server = supertest(app);
+const request = require('supertest');
+const app = require('../app');
 
-tap.test("POST /tasks", async (t) => {
-  const newTask = {
-    title: "New Task",
-    description: "New Task Description",
-    completed: false,
-  };
-  const response = await server.post("/tasks").send(newTask);
-  t.equal(response.status, 201);
-  t.end();
-});
+describe('Movie API Tests', () => {
+    
+    describe('GET /', () => {
+        it('should return hello world message', async () => {
+            const res = await request(app).get('/');
+            expect(res.status).toBe(200);
+            expect(res.text).toContain('Hello World');
+        });
+    });
 
-tap.test("POST /tasks with invalid data", async (t) => {
-  const newTask = {
-    title: "New Task",
-  };
-  const response = await server.post("/tasks").send(newTask);
-  t.equal(response.status, 400);
-  t.end();
-});
+    describe('GET /api/movies', () => {
+        it('should return all movies', async () => {
+            const res = await request(app).get('/api/movies');
+            expect(res.status).toBe(200);
+            expect(Array.isArray(res.body)).toBe(true);
+            expect(res.body.length).toBeGreaterThan(0);
+        });
 
-tap.test("GET /tasks", async (t) => {
-  const response = await server.get("/tasks");
-  t.equal(response.status, 200);
-  t.hasOwnProp(response.body[0], "id");
-  t.hasOwnProp(response.body[0], "title");
-  t.hasOwnProp(response.body[0], "description");
-  t.hasOwnProp(response.body[0], "completed");
-  t.type(response.body[0].id, "number");
-  t.type(response.body[0].title, "string");
-  t.type(response.body[0].description, "string");
-  t.type(response.body[0].completed, "boolean");
-  t.end();
-});
+        it('should return movies with correct properties', async () => {
+            const res = await request(app).get('/api/movies');
+            expect(res.status).toBe(200);
+            const firstMovie = res.body[0];
+            expect(firstMovie).toHaveProperty('id');
+            expect(firstMovie).toHaveProperty('name');
+            expect(firstMovie).toHaveProperty('year');
+            expect(firstMovie).toHaveProperty('rating');
+            expect(firstMovie).toHaveProperty('genre');
+            expect(firstMovie).toHaveProperty('director');
+            expect(firstMovie).toHaveProperty('duration');
+        });
+    });
 
-tap.test("GET /tasks/:id", async (t) => {
-  const response = await server.get("/tasks/1");
-  t.equal(response.status, 200);
-  const expectedTask = {
-    id: 1,
-    title: "Set up environment",
-    description: "Install Node.js, npm, and git",
-    completed: true,
-  };
-  t.match(response.body, expectedTask);
-  t.end();
-});
+    describe('GET /api/movies/:id', () => {
+        it('should return a specific movie by id', async () => {
+            const res = await request(app).get('/api/movies/1');
+            expect(res.status).toBe(200);
+            expect(res.body).toHaveProperty('id', 1);
+            expect(res.body).toHaveProperty('name');
+        });
 
-tap.test("GET /tasks/:id with invalid id", async (t) => {
-  const response = await server.get("/tasks/999");
-  t.equal(response.status, 404);
-  t.end();
-});
+        it('should return 404 for non-existent movie', async () => {
+            const res = await request(app).get('/api/movies/999');
+            expect(res.status).toBe(404);
+        });
 
-tap.test("PUT /tasks/:id", async (t) => {
-  const updatedTask = {
-    title: "Updated Task",
-    description: "Updated Task Description",
-    completed: true,
-  };
-  const response = await server.put("/tasks/1").send(updatedTask);
-  t.equal(response.status, 200);
-  t.end();
-});
+        it('should handle invalid id format', async () => {
+            const res = await request(app).get('/api/movies/abc');
+            expect(res.status).toBe(404);
+        });
+    });
 
-tap.test("PUT /tasks/:id with invalid id", async (t) => {
-  const updatedTask = {
-    title: "Updated Task",
-    description: "Updated Task Description",
-    completed: true,
-  };
-  const response = await server.put("/tasks/999").send(updatedTask);
-  t.equal(response.status, 404);
-  t.end();
-});
+    describe('POST /api/movies', () => {
+        it('should create a new movie', async () => {
+            const newMovie = {
+                name: 'Test Movie',
+                year: '2023',
+                rating: 8.0,
+                genre: 'Drama',
+                director: 'Test Director',
+                duration: '120 min'
+            };
 
-tap.test("PUT /tasks/:id with invalid data", async (t) => {
-  const updatedTask = {
-    title: "Updated Task",
-    description: "Updated Task Description",
-    completed: "true",
-  };
-  const response = await server.put("/tasks/1").send(updatedTask);
-  t.equal(response.status, 400);
-  t.end();
-});
+            const res = await request(app)
+                .post('/api/movies')
+                .send(newMovie);
+            
+            expect(res.status).toBe(201);
+            expect(res.body).toHaveProperty('id');
+            expect(res.body.name).toBe(newMovie.name);
+        });
+    });
 
-tap.test("DELETE /tasks/:id", async (t) => {
-  const response = await server.delete("/tasks/1");
-  t.equal(response.status, 200);
-  t.end();
-});
+    describe('PUT /api/movies/:id', () => {
+        it('should update an existing movie', async () => {
+            const updatedMovie = {
+                name: 'Updated Movie',
+                year: '2024',
+                rating: 9.0,
+                genre: 'Action',
+                director: 'Updated Director',
+                duration: '150 min'
+            };
 
-tap.test("DELETE /tasks/:id with invalid id", async (t) => {
-  const response = await server.delete("/tasks/999");
-  t.equal(response.status, 404);
-  t.end();
-});
+            const res = await request(app)
+                .put('/api/movies/1')
+                .send(updatedMovie);
+            
+            expect(res.status).toBe(200);
+            expect(res.body.name).toBe(updatedMovie.name);
+        });
 
-tap.teardown(() => {
-  process.exit(0);
+        it('should return 404 for non-existent movie', async () => {
+            const res = await request(app)
+                .put('/api/movies/999')
+                .send({});
+            
+            expect(res.status).toBe(404);
+        });
+    });
+
+    describe('DELETE /api/movies/:id', () => {
+        it('should delete an existing movie', async () => {
+            const res = await request(app).delete('/api/movies/2');
+            expect(res.status).toBe(200);
+            expect(res.body).toHaveProperty('id', 2);
+        });
+
+        it('should return 404 for non-existent movie', async () => {
+            const res = await request(app).delete('/api/movies/999');
+            expect(res.status).toBe(404);
+        });
+    });
 });
